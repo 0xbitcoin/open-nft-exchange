@@ -1,4 +1,4 @@
-pragma solidity ^0.4.9;
+pragma solidity ^0.5.0;
 
 
 /**
@@ -33,41 +33,41 @@ contract SafeMath {
   }
 
   function assert(bool assertion) internal {
-    if (!assertion) throw;
+    if (!assertion) revert();
   }
 }
 
-contract Token {
+contract ERC20 {
   /// @return total amount of tokens
-  function totalSupply() view returns (uint256 supply) {}
+  function totalSupply() public view returns (uint256 supply) {}
 
   /// @param _owner The address from which the balance will be retrieved
   /// @return The balance
-  function balanceOf(address _owner) view returns (uint256 balance) {}
+  function balanceOf(address _owner) public view returns (uint256 balance) {}
 
   /// @notice send `_value` token to `_to` from `msg.sender`
   /// @param _to The address of the recipient
   /// @param _value The amount of token to be transferred
   /// @return Whether the transfer was successful or not
-  function transfer(address _to, uint256 _value) returns (bool success) {}
+  function transfer(address _to, uint256 _value) public returns (bool success) {}
 
   /// @notice send `_value` token to `_to` from `_from` on the condition it is approved by `_from`
   /// @param _from The address of the sender
   /// @param _to The address of the recipient
   /// @param _value The amount of token to be transferred
   /// @return Whether the transfer was successful or not
-  function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {}
+  function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {}
 
   /// @notice `msg.sender` approves `_addr` to spend `_value` tokens
   /// @param _spender The address of the account able to transfer the tokens
   /// @param _value The amount of wei to be approved for transfer
   /// @return Whether the approval was successful or not
-  function approve(address _spender, uint256 _value) returns (bool success) {}
+  function approve(address _spender, uint256 _value) public returns (bool success) {}
 
   /// @param _owner The address of the account owning tokens
   /// @param _spender The address of the account able to transfer the tokens
   /// @return Amount of remaining tokens allowed to spent
-  function allowance(address _owner, address _spender) view returns (uint256 remaining) {}
+  function allowance(address _owner, address _spender) public view returns (uint256 remaining) {}
 
   event Transfer(address indexed _from, address indexed _to, uint256 _value);
   event Approval(address indexed _owner, address indexed _spender, uint256 _value);
@@ -76,53 +76,7 @@ contract Token {
   string public name;
 }
 
-contract StandardToken is Token {
 
-  function transfer(address _to, uint256 _value) returns (bool success) {
-    //Default assumes totalSupply can't be over max (2^256 - 1).
-    //If your token leaves out totalSupply and can issue more tokens as time goes on, you need to check if it doesn't wrap.
-    //Replace the if with this one instead.
-    if (balances[msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
-    //if (balances[msg.sender] >= _value && _value > 0) {
-      balances[msg.sender] -= _value;
-      balances[_to] += _value;
-      Transfer(msg.sender, _to, _value);
-      return true;
-    } else { return false; }
-  }
-
-  function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-    //same as above. Replace this line with the following if you want to protect against wrapping uints.
-    if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
-    //if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && _value > 0) {
-      balances[_to] += _value;
-      balances[_from] -= _value;
-      allowed[_from][msg.sender] -= _value;
-      Transfer(_from, _to, _value);
-      return true;
-    } else { return false; }
-  }
-
-  function balanceOf(address _owner) view returns (uint256 balance) {
-    return balances[_owner];
-  }
-
-  function approve(address _spender, uint256 _value) returns (bool success) {
-    allowed[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value);
-    return true;
-  }
-
-  function allowance(address _owner, address _spender) view returns (uint256 remaining) {
-    return allowed[_owner][_spender];
-  }
-
-  mapping(address => uint256) balances;
-
-  mapping (address => mapping (address => uint256)) allowed;
-
-  uint256 public totalSupply;
-}
 
 /// @title ERC-721 Non-Fungible Token Standard
        /// @dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
@@ -171,7 +125,7 @@ contract StandardToken is Token {
            /// @param _to The new owner
            /// @param _tokenId The NFT to transfer
            /// @param data Additional data with no specified format, sent in call to `_to`
-           function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes data) external payable;
+           function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata data) external payable;
 
            /// @notice Transfers the ownership of an NFT from one address to another address
            /// @dev This works identically to the other function with an extra data parameter,
@@ -244,7 +198,7 @@ contract StandardToken is Token {
            /// @param _data Additional data with no specified format
            /// @return `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
            /// unless throwing
-           function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes _data) external returns(bytes4);
+           function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes calldata _data) external returns(bytes4);
         }
 
 
@@ -302,41 +256,46 @@ contract OpenNFTExchange is SafeMath {
   event Deposit(address token, address user, uint amount, uint balance);
   event Withdraw(address token, address user, uint amount, uint balance);
 
-  constructor() {
+  constructor() public {
 
   }
 
   //Do not allow Currency to enter
-  function() payable {
-    throw;
+  function() external payable {
+    revert();
   }
 
 
   //deposit an NFT token into the exchange's escrow - requires an Approve first
 
-  function depositNFT(address _nftContractAddress, uint _itemId) {
+  function depositNFT(address _nftContractAddress, uint _itemId) public returns (bool){
+     address from = msg.sender;
+
     //remember to call Token(address).approve(this, amount) or this contract will not be able to do the transfer on your behalf.
-    if (token==0) throw;
-    if (!Token(token).transferFrom(msg.sender, this, amount)) throw;
-    tokens[token][msg.sender] = safeAdd(tokens[token][msg.sender], amount);
-    Deposit(token, msg.sender, amount, tokens[token][msg.sender]);
+
+    //require(token>0);
+    //require(ERC20(token).transferFrom(msg.sender, this, amount));
+    //tokens[token][msg.sender] = safeAdd(tokens[token][msg.sender], amount);
+   // emit Deposit(token, msg.sender, amount, tokens[token][msg.sender]);
   }
 
-  function withdrawNFT(address _nftContractAddress, uint _itemId) {
-    if (token==0) throw;
-    if (tokens[token][msg.sender] < amount) throw;
-    tokens[token][msg.sender] = safeSub(tokens[token][msg.sender], amount);
-    if (!Token(token).transfer(msg.sender, amount)) throw;
-    Withdraw(token, msg.sender, amount, tokens[token][msg.sender]);
+  function withdrawNFT(address _nftContractAddress, uint _itemId) public returns (bool){
+       address from = msg.sender;
+
+   // if (token==0) throw;
+    //if (tokens[token][msg.sender] < amount) throw;
+    //tokens[token][msg.sender] = safeSub(tokens[token][msg.sender], amount);
+    //if (!Token(token).transfer(msg.sender, amount)) throw;
+    //Withdraw(token, msg.sender, amount, tokens[token][msg.sender]);
   }
 
-  function getOwnerOfNFT(address _nftContractAddress, address _itemId) view returns (uint) {
-    return tokens[token][user];
+  function getOwnerOfNFT(address _nftContractAddress, address _itemId) public view returns (uint) {
+     // return tokens[token][user];
   }
 
 
 
-
+/*
 
   function order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce) {
     bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
@@ -374,7 +333,7 @@ contract OpenNFTExchange is SafeMath {
     Cancel(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, msg.sender, v, r, s);
   }
 
-
+*/
 
 
 }
