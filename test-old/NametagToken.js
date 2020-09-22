@@ -1,14 +1,19 @@
-const NametagToken = artifacts.require("NametagToken");
-const OpenNFTExchange = artifacts.require("OpenNFTExchange");
+var NametagToken = artifacts.require("./NametagToken.sol");
 
-
-
-
+var web3utils =  require('web3-utils');
+  
 const Web3 = require('web3')
 // Instantiate new web3 object pointing toward an Ethereum node.
 let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
-var web3utils = web3.utils;
+//https://web3js.readthedocs.io/en/1.0/web3-utils.html
+//https://medium.com/@valkn0t/3-things-i-learned-this-week-using-solidity-truffle-and-web3-a911c3adc730
+
+
+
+//Test _reAdjustDifficulty
+//Test rewards decreasing
+
 
 contract('NametagToken', function(accounts) {
 

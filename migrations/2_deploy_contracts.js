@@ -1,11 +1,11 @@
 var NametagToken = artifacts.require("./NametagToken.sol");
-var nftExchange = artifacts.require("./OpenNFTExchange.sol");
+var OpenNFTExchange = artifacts.require("./OpenNFTExchange.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(NametagToken,'Nametag Token','NTT').then(function(){
+  deployer.deploy(NametagToken).then(function(){
 
       // NametagToken.address
-    deployer.deploy(nftExchange)
+    deployer.deploy(OpenNFTExchange)
 
   });
 };
