@@ -204,11 +204,13 @@ contract('OpenNFTExchange',(accounts) => {
         console.log('contract typeddatahash ',typedDataHash)
 
 
-        //not working 
-        var localTypedDataHash = ECDSAHelper.getBidTypedDataHash(bid);
+        //not working
+        var localTypedDataHash = ECDSAHelper.bufferToHex(ECDSAHelper.getBidTypedDataHash(bid));
 
 
-            assert.equal( localTypedDataHash,typedDataHash );
+
+
+        assert.equal( localTypedDataHash,typedDataHash );
 
 
 

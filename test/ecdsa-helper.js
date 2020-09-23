@@ -84,9 +84,9 @@ function typedSignatureHash(typedData) {
  static getBidTypedDataHash(bid)
  {
    var typedData = ECDSAHelper.getTypedDataFromBid(bid);
- 
 
-   var typedDataHash = ethUtil.sha3(
+
+   var typedDataHash = ethUtil.keccak256 (
        Buffer.concat([
            Buffer.from('1901', 'hex'),
   //         EIP712Helper.structHash('EIP712Domain', typedData.domain, types),
