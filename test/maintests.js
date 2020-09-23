@@ -106,12 +106,14 @@ contract('OpenNFTExchange',(accounts) => {
     var nftContractAddress = nametagContract.options.address;
 
 
-    assert.equal( await nametagContract.methods.ownerOf(assetId), myAccount),call()
+    assert.equal( await nametagContract.methods.ownerOf(assetId).call(), myAccount)
+
+    var exchangeAddress = openNFTExchange.options.address;
 
 
     try {
 
-      await nametagContract.methods.approve(OpenNFTExchange.address, assetId).send({ from: myAccount })
+      await nametagContract.methods.approve(exchangeAddress, assetId).send({ from: myAccount, gas:3000000 })
     } catch (error) {
       assert.fail("Method Reverted", "approve",  error.reason);
     }
