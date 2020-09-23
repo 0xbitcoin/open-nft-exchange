@@ -51,6 +51,8 @@ contract('OpenNFTExchange',(accounts) => {
 
 
 
+    await fixedSupplyToken.methods.transfer(counterpartyAccount, 1000000 ).send({from:myAccount})
+
 
     assert.ok(nametagContract);
     assert.ok(openNFTExchange);
@@ -123,7 +125,7 @@ contract('OpenNFTExchange',(accounts) => {
       assert.fail("Method Reverted", "approve",  error.reason);
     }
 
-    
+
     //deposit the token
     try {
       await openNFTExchange.methods.depositNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;

@@ -1,6 +1,8 @@
 pragma solidity ^0.5.0;
 
 
+pragma experimental ABIEncoderV2;
+
 /**
 
 Work in Progress
@@ -18,6 +20,67 @@ Need to:
 
 import "./util/SafeMath.sol";
 import "./util/ERC20.sol";
+
+
+
+
+contract ECRecovery {
+  function recover(bytes32 hash, bytes memory signature) internal pure returns (address) {
+      // Check the signature length
+      if (signature.length != 65) {
+          return (address(0));
+      }
+
+      // Divide the signature in r, s and v variables
+      bytes32 r;
+      bytes32 s;
+      uint8 v;
+
+      // ecrecover takes the signature parameters, and the only way to get them
+      // currently is to use assembly.
+      // solhint-disable-next-line no-inline-assembly
+      assembly {
+          r := mload(add(signature, 0x20))
+          s := mload(add(signature, 0x40))
+          v := byte(0, mload(add(signature, 0x60)))
+      }
+
+      // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
+      // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
+      // the valid range for s in (281): 0 < s < secp256k1n ÷ 2 + 1, and for v in (282): v ∈ {27, 28}. Most
+      // signatures from current libraries generate a unique signature with an s-value in the lower half order.
+      //
+      // If your library generates malleable signatures, such as s-values in the upper range, calculate a new s-value
+      // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
+      // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
+      // these malleable signatures as well.
+      if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+          return address(0);
+      }
+
+      if (v != 27 && v != 28) {
+          return address(0);
+      }
+
+      // If the signature is valid (and not malleable), return the signer address
+      return ecrecover(hash, v, r, s);
+  }
+
+  /**
+   * toEthSignedMessageHash
+   * @dev prefix a bytes32 value with "\x19Ethereum Signed Message:"
+   * and hash the result
+   */
+  function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
+      // 32 is the length in bytes of hash,
+      // enforced by the type signature above
+      return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+  }
+
+}
+
+
+
 
 /// @title ERC-721 Non-Fungible Token Standard
 /// @dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
@@ -127,7 +190,7 @@ contract ERC721Receiver {
     function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes memory _data) public returns(bytes4);
 }
 
-contract OpenNFTExchange is ERC721Receiver {
+contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
     using SafeMath for uint;
 
@@ -139,27 +202,31 @@ contract OpenNFTExchange is ERC721Receiver {
     struct Offer {
         bool isForSale;
 
-        address tokenAddress;
-        uint tokenId;
+        address nfTokenContract;
+        uint nfTokenId;
 
         address sellerAddress;
 
-        address currencyTokenAddress;
-        uint minValue;          // in the curency
+        address currencyTokenContract;
+        uint currencyTokenAmount;          // in the currency
 
         address onlySellTo;     // specify to sell only to a specific person
     }
 
-    struct Bid {
-        bool hasBid;
-
-        address tokenAddress;
-        uint tokenId;
+    //offchain bids, use the code from lavawallet to handle Personalsign
+    struct OffchainBid {
 
         address bidderAddress;
 
-        address currencyTokenAddress;
-        uint value;
+        address nfTokenContract;
+        uint nfTokenId;
+
+        address currencyTokenContract;
+        uint currencyTokenAmount;
+
+        uint expires; //block number to expire at
+
+        bytes bidderSignature;
     }
 
 
@@ -169,19 +236,20 @@ contract OpenNFTExchange is ERC721Receiver {
     mapping (address => mapping (uint => Offer)) public nfTokensOfferedForSale;   //itemsOfferedForSale[nftAddress][indexOfToken] => Offer
 
     // A record of the highest item bid
-    mapping (address=> mapping(uint => Bid)) public nfTokenBids;   //itemBidsOfferedForSale[nftAddress][indexOfToken] => Bid
-
-
+    //mapping (address=> mapping(uint => Bid)) public nfTokenBids;   //itemBidsOfferedForSale[nftAddress][indexOfToken] => Bid
 
   //mapping (address => mapping (address => uint)) public tokens; //mapping of token addresses to mapping of account balances (token=0 means Ether)
   //mapping (address => mapping (bytes32 => bool)) public orders; //mapping of user accounts to mapping of order hashes to booleans (true = submitted by user, equivalent to offchain signature)
   //mapping (address => mapping (bytes32 => uint)) public orderFills; //mapping of user accounts to mapping of order hashes to uints (amount of order that has been filled)
 
-  event Order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user);
-  event Cancel(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s);
-  event Trade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, address get, address give);
-  event Deposit(address token, address user, uint amount, uint balance);
-  event Withdraw(address token, address user, uint amount, uint balance);
+  event NewOffer(address nfTokenContract, uint nfTokenId, address currencyTokenContract, uint currencyTokenAmount);
+
+  //event Trade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, address get, address give);
+  event Deposit(address nfTokenContract, uint nfTokenId);
+  event Withdraw(address nfTokenContract, uint nfTokenId);
+
+  event CancelOffer(address nfTokenContract, uint nfTokenId);
+  event Trade(address nfTokenContract, uint nfTokenId, address currencyTokenContract, uint currencyTokenAmount, address newOwner);
 
   constructor() public {
 
@@ -201,88 +269,188 @@ contract OpenNFTExchange is ERC721Receiver {
   }
 
   //deposit an NFT token into the exchange's escrow - requires an Approve first
-
-  function depositNFT(address _nftContractAddress, uint _itemId) public returns (bool){
+  function depositNFT(address _nfTokenContract, uint _nfTokenId) public returns (bool){
      address from = msg.sender;
 
-     require(ownerOf(_nftContractAddress,_itemId) == address(0), "NFT already deposited");
+     require(ownerOf(_nfTokenContract,_nfTokenId) == address(0), "NFT already deposited");
 
-     iERC721(_nftContractAddress).safeTransferFrom(from, address(this),_itemId );
+     iERC721(_nfTokenContract).safeTransferFrom(from, address(this),_nfTokenId );
 
      //record the owner of the deposited item
-     nfTokensInEscrow[_nftContractAddress][_itemId] = from;
-
-
-
-   //require( 1 == 2 , "one doesnt equal two!");
+     nfTokensInEscrow[_nfTokenContract][_nfTokenId] = from;
 
    return true;
   }
 
-  function withdrawNFT(address _nftContractAddress, uint _itemId) public returns (bool){
+  function withdrawNFT(address _nfTokenContract, uint _nfTokenId) public returns (bool){
       address from = msg.sender;
 
-      require(ownerOf(_nftContractAddress,_itemId) == from, "Not the owner");
+      require(ownerOf(_nfTokenContract,_nfTokenId) == from, "Not the owner");
 
-      iERC721(_nftContractAddress).safeTransferFrom(address(this),from,_itemId);
+      iERC721(_nfTokenContract).safeTransferFrom(address(this),from,_nfTokenId);
 
-      nfTokensInEscrow[_nftContractAddress][_itemId] = address(0);
+      nfTokensInEscrow[_nfTokenContract][_nfTokenId] = address(0);
 
     return true;
   }
 
-  function ownerOf(address _nftContractAddress, uint _itemId) public view returns (address) {
-     return nfTokensInEscrow[_nftContractAddress][_itemId];
+  function ownerOf(address _nfTokenContract, uint _nfTokenId) public view returns (address) {
+     return nfTokensInEscrow[_nfTokenContract][_nfTokenId];
   }
 
-  function offerAssetForSale(address _nftContractAddress, uint _itemId, address _tokenCurrencyAddress, uint tokenCurrencyAmount  ) public returns (bool)
+  function offerAssetForSale(address _nfTokenContract, uint _nfTokenId, address _currencyTokenContract, uint _currencyTokenAmount  ) public returns (bool)
+  {
+    address from = msg.sender;
+
+    require(ownerOf(_nfTokenContract,_nfTokenId) == from, "Not the owner");
+
+    nfTokensOfferedForSale[_nfTokenContract][_nfTokenId] = Offer({
+       isForSale: true,
+
+       nfTokenContract: _nfTokenContract,
+       nfTokenId: _nfTokenId,
+
+       sellerAddress: from,
+
+       currencyTokenContract: _currencyTokenContract,
+       currencyTokenAmount: _currencyTokenAmount,
+
+       onlySellTo: address(0) //sell to anyone
+      });
+
+      emit NewOffer( _nfTokenContract, _nfTokenId, _currencyTokenContract, _currencyTokenAmount );
+
+    return true;
+  }
+
+
+
+  function cancelSaleOfferOnAsset( address _nfTokenContract, uint _nfTokenId ) public returns (bool) {
+
+    address from = msg.sender;
+
+    require(ownerOf(_nfTokenContract,_nfTokenId) == from, "Not the owner");
+
+    require(_cancelSaleOfferOnAsset(_nfTokenContract,_nfTokenId));
+
+    emit CancelOffer(_nfTokenContract,_nfTokenId);
+
+    return true;
+  }
+
+
+  //requires pre-approval of the currencyToken specified in the offer
+  function buyoutAsset(address _nfTokenContract, uint _nfTokenId) public returns (bool)
+  {
+    address buyer = msg.sender;
+
+    require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].isForSale, "Not for sale");
+
+    require(_handlePaymentForSaleOfNfToken(_nfTokenContract,_nfTokenId,buyer), 'Payment failed');
+
+    require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
+
+    //reassign the owner of the asset
+    nfTokensInEscrow[_nfTokenContract][_nfTokenId] = buyer;
+
+    emit Trade(_nfTokenContract, _nfTokenId, nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract , nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount, buyer);
+
+    return true;
+  }
+
+
+
+  function _cancelSaleOfferOnAsset(address _nfTokenContract, uint _nfTokenId) private returns (bool)
+  {
+   delete nfTokensOfferedForSale[_nfTokenContract][_nfTokenId]  ;
+
+    return true;
+  }
+
+  function _handlePaymentForSaleOfNfToken(address _nfTokenContract,uint _nfTokenId,address buyer) private returns (bool)
+  {
+    address seller = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].sellerAddress;
+
+    address currencyToken = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract;
+    uint currencyTokenAmount = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount;
+
+    //pull the currency tokens into this contract and then send them to the seller
+    require( ERC20(currencyToken).transferFrom(buyer,seller,currencyTokenAmount), 'Could not transferFrom the currencyToken' );
+
+    return true;
+  }
+
+
+  bytes sig;
+
+
+  //bids will be offchain and fed into the contract by the owner
+  function acceptOffchainBidWithSignature(OffchainBid memory bid, bytes memory buyerSignature  ) public returns (bool)
+  {
+    address _nfTokenContract = bid.nfTokenContract;
+    uint _nfTokenId = bid.nfTokenId;
+
+    address from = msg.sender;
+    require(ownerOf(_nfTokenContract,_nfTokenId) == from, "Not the owner");
+
+    bytes32 sigHash = getBidTypedDataHash(bid);
+
+    sig = buyerSignature;
+
+    //check the signature of the offchain bid here ...
+    address recoveredSignatureSigner = recover(sigHash, sig );
+    require(bid.bidderAddress == recoveredSignatureSigner, 'Offchain signature invalid');
+
+
+
+    require(_handlePaymentForSaleOfNfToken(_nfTokenContract,_nfTokenId,bid.bidderAddress), 'Payment failed');
+
+    require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
+
+    //reassign the owner of the asset
+    nfTokensInEscrow[_nfTokenContract][_nfTokenId] = bid.bidderAddress;
+
+    emit Trade(_nfTokenContract, _nfTokenId, nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract , nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount, bid.bidderAddress);
+
+    return true;
+  }
+
+
+  function getBidTypedDataHash(OffchainBid memory bid) public view returns (bytes32)
   {
 
+          // Note: we need to use `encodePacked` here instead of `encode`.
+          bytes32 digest = keccak256(abi.encodePacked(
+              "\x19\x01",
+            //  DOMAIN_SEPARATOR,
+              getBidPacketHash(bid)
+          ));
+          return digest;
 
-    return true;
   }
 
 
-
-/*
-
-  function order(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce) {
-    bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
-    orders[msg.sender][hash] = true;
-    Order(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, msg.sender);
-  }
-
-  function trade(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s, uint amount) {
-    //amount is in amountGet terms
-    bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
-    if (!(
-      (orders[user][hash] || ecrecover(sha3("\x19Ethereum Signed Message:\n32", hash),v,r,s) == user) &&
-      block.number <= expires &&
-      safeAdd(orderFills[user][hash], amount) <= amountGet
-    )) throw;
-    _tradeBalances(tokenGet, amountGet, tokenGive, amountGive, user, amount);
-    orderFills[user][hash] = safeAdd(orderFills[user][hash], amount);
-    Trade(tokenGet, amount, tokenGive, amountGive * amount / amountGet, user, msg.sender);
-  }
-
-  function _tradeBalances(address tokenGet, uint amountGet, address tokenGive, uint amountGive, address user, uint amount) private {
-
-    tokens[tokenGet][msg.sender] = safeSub(tokens[tokenGet][msg.sender], amount);
-    tokens[tokenGet][user] = safeAdd(tokens[tokenGet][user], amount);
-
-    tokens[tokenGive][user] = safeSub(tokens[tokenGive][user], safeMul(amountGive, amount) / amountGet);
-    tokens[tokenGive][msg.sender] = safeAdd(tokens[tokenGive][msg.sender], safeMul(amountGive, amount) / amountGet);
-  }
+  //make sure this has no extra spaces
+   bytes32 public BIDPACKET_TYPEHASH = keccak256(
+       "BidPacket(address bidderAddress,address nfTokenContract,uint256 nfTokenId,address currencyTokenContract,uint256 currencyTokenAmount,uint256 expires)"
+   );
 
 
-  function cancelOrder(address tokenGet, uint amountGet, address tokenGive, uint amountGive, uint expires, uint nonce, uint8 v, bytes32 r, bytes32 s) {
-    bytes32 hash = sha256(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce);
-    if (!(orders[msg.sender][hash] || ecrecover(sha3("\x19Ethereum Signed Message:\n32", hash),v,r,s) == msg.sender)) throw;
-    orderFills[msg.sender][hash] = amountGet;
-    Cancel(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, msg.sender, v, r, s);
-  }
+    function getBidPacketHash(OffchainBid memory bid) public view returns (bytes32) {
+        return keccak256(abi.encode(
+            BIDPACKET_TYPEHASH,
+            bid.bidderAddress,
+            bid.nfTokenContract,
+            bid.nfTokenId,
+            bid.currencyTokenContract,
+            bid.currencyTokenAmount,
+            bid.expires
+        ));
+    }
 
-*/
+
+
+
 
 
 }
