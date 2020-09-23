@@ -193,15 +193,15 @@ contract('OpenNFTExchange',(accounts) => {
         await fixedSupplyToken.methods.approve(exchangeAddress, bidAmount  ).send({from: counterpartyAccount});
 
 
-        var newBid = ECDSAHelper.getOffchainBid(counterpartyAccount,nftContractAddress,assetId, tokenCurrencyAddress,bidAmount,  expires ) ;
+        var bid = ECDSAHelper.getOffchainBid(counterpartyAccount,nftContractAddress,assetId, tokenCurrencyAddress,bidAmount,  expires ) ;
+        console.log('bid',bid)
+        var bidTuple = ECDSAHelper.bidToTuple(bid)
 
+        var bidHash = await openNFTExchange.methods.getBidPacketHash(bidTuple).call()
+        console.log('contract bidhash',bidHash)
 
-        var bidHash = await openNFTExchange.methods.getBidPacketHash(bid).call()
-
-
-        var typedDataHash =  await openNFTExchange.methods.getBidTypedDataHash(bid).call()
-
-
+        var typedDataHash =  await openNFTExchange.methods.getBidTypedDataHash(bidTuple).call()
+        console.log('contract typeddatahash ',typedDataHash)
 
 
       });

@@ -152,6 +152,11 @@ function typedSignatureHash(typedData) {
 
      }
 
+     static bidToTuple(bid)
+     {
+       return [bid.bidderAddress,bid.nfTokenContract,bid.nfTokenId,bid.currencyTokenContract,bid.currencyTokenAmount,bid.expires]
+     }
+
      //???
      static bidHasValidSignature(bid){
 

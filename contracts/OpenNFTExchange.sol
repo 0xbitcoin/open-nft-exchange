@@ -226,7 +226,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
         uint expires; //block number to expire at
 
-        bytes bidderSignature;
+    //    bytes bidderSignature;
     }
 
 
