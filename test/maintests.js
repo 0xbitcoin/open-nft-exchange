@@ -17,7 +17,7 @@ contract('NametagToken', function(accounts) {
 
     it("can deploy ", async function () {
 
-       
+
       nametagContract = await NametagToken.deployed();
 
 
@@ -58,7 +58,9 @@ contract('OpenNFTExchange', function(accounts) {
     console.log( 'deploying exchange' )
     openNFTExchange = await OpenNFTExchange.deployed();
 
-    console.log('ntt is ', nametagContract)
+    console.log('nametagcontract is ',nametagContract.address)
+    assert.isNotNull(nametagContract.address)
+
     })
 
 
