@@ -213,6 +213,9 @@ contract('OpenNFTExchange',(accounts) => {
         assert.equal( localTypedDataHash,typedDataHash );
 
 
+        //add domain typehash
+        // https://ethvigil.com/docs/eip712_sign_example_code/
+
 
       });
 
