@@ -17,12 +17,12 @@ var EIP712Helper = require("./eip712-helper");
 
 
 
-module.exports = class LavaTestUtils{
+module.exports = class ECDSAHelper{
 
 
 
 
-   signTypedData(privateKey, msgParams)
+  static signTypedData(privateKey, msgParams)
   {
 
     const msgHash = ethSigUtil.typedSignatureHash(msgParams.data)
@@ -37,7 +37,7 @@ module.exports = class LavaTestUtils{
 
 
 
-  recoverTypedSignature(params)
+ static  recoverTypedSignature(params)
  {
 
     return ethSigUtil.recoverTypedSignature(params)
@@ -75,19 +75,22 @@ function typedSignatureHash(typedData) {
 
 
 
- getBidPacketSchemaHash()
+ static getBidPacketSchemaHash()
  {
   //  var hardcodedSchemaHash = '0x8fd4f9177556bbc74d0710c8bdda543afd18cc84d92d64b5620d5f1881dceb37' ;
     return hardcodedSchemaHash;
  }
 
- getBidTypedDataHash(typedData,types)
+ static getBidTypedDataHash(bid)
  {
+   var typedData = ECDSAHelper.getTypedDataFromBid(bid);
+ 
+
    var typedDataHash = ethUtil.sha3(
        Buffer.concat([
            Buffer.from('1901', 'hex'),
   //         EIP712Helper.structHash('EIP712Domain', typedData.domain, types),
-           EIP712Helper.structHash(typedData.primaryType, typedData.packet, types),
+           EIP712Helper.structHash(typedData.primaryType, typedData.bid, typedData.types),
        ]),
    );
 
@@ -95,7 +98,7 @@ function typedSignatureHash(typedData) {
  }
 
 //methodName,relayAuthority,from,to,walletAddress,tokenAddress,tokenAmount,relayerRewardToken,relayerRewardTokens,expires,nonce
- getTypedDataFromBid( bid )
+ static getTypedDataFromBid( bid )
  {
    const typedData = {
            types: {
@@ -111,7 +114,7 @@ function typedSignatureHash(typedData) {
            },
            primaryType: 'OffchainBid',
 
-           packet: {
+           bid: {
                bidderAddress: bid.bidderAddress,
                nfTokenContract: bid.nfTokenContract,
                nfTokenId: bid.nfTokenId,
@@ -160,7 +163,7 @@ function typedSignatureHash(typedData) {
      //???
      static bidHasValidSignature(bid){
 
-       var sigHash = this.getBidTypedDataHash(bid, this.getTypedDataFromBid( bid ));
+       var sigHash = ECDSAHelper.getBidTypedDataHash(bid);
 
 
        var msgBuf = ethjsutil.toBuffer(packetData.signature)
