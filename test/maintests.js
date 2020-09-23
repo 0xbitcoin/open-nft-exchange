@@ -118,20 +118,19 @@ contract('OpenNFTExchange',(accounts) => {
       assert.fail("Method Reverted", "approve",  error.reason);
     }
 
-/*
+
     try {
-      await openNFTExchange.depositNFT(nftContractAddress, assetId) ;
+      await openNFTExchange.methods.depositNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
     } catch (error) {
       assert.fail("Method Reverted", "depositNFT",  error.reason);
     }
 
     try {
-      await openNFTExchange.withdrawNFT(nftContractAddress, assetId) ;
+      await openNFTExchange.methods.withdrawNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
     } catch (error) {
       assert.fail("Method Reverted", "withdrawNFT",  error.reason);
     }
 
-*/
 
 
 
