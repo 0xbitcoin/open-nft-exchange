@@ -277,6 +277,10 @@ contract OpenNFTExchange is SafeMath {
     //require(ERC20(token).transferFrom(msg.sender, this, amount));
     //tokens[token][msg.sender] = safeAdd(tokens[token][msg.sender], amount);
    // emit Deposit(token, msg.sender, amount, tokens[token][msg.sender]);
+
+   require( 1 == 2 , "this is an error ");
+
+   return true;
   }
 
   function withdrawNFT(address _nftContractAddress, uint _itemId) public returns (bool){

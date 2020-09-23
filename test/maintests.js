@@ -11,6 +11,7 @@ let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 var web3utils = web3.utils;
 
 var nametagContract;
+var assetId;
 
 contract('NametagToken', function(accounts) {
 
@@ -42,6 +43,8 @@ contract('NametagToken', function(accounts) {
     var contractFoundId = await nametagContract.nameToTokenId(phrase);
     var contractFoundHex = web3utils.numberToHex(contractFoundId);
 
+    assetId = contractFoundHex;
+
     assert.equal(digest,contractFoundHex)
 
 
@@ -60,6 +63,26 @@ contract('OpenNFTExchange', function(accounts) {
 
     console.log('nametagcontract is ',nametagContract.address)
     assert.isNotNull(nametagContract.address)
+
+    var nftContractAddress = nametagContract.address;
+
+    try {
+
+      await openNFTExchange.depositNFT(nftContractAddress, assetId) ;
+
+    } catch (error) {
+
+      // error.reason now populated with an REVERT reason
+
+      assert.fail("Method Reverted", "depositNFT",  error.reason);
+
+      return;
+    }
+
+
+
+
+
 
     })
 
