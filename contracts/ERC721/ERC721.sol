@@ -246,7 +246,7 @@ contract ERC721 is ERC165, IERC721 {
    * @param tokenId uint256 ID of the token to be minted by the msg.sender
    */
   function _mint(address to, uint256 tokenId) internal {
-    require(to != address(0));
+    require(to != address(0), 'cannot mint token - already claimed this id');
     _addTokenTo(to, tokenId);
     emit Transfer(address(0), to, tokenId);
   }
@@ -281,7 +281,7 @@ contract ERC721 is ERC165, IERC721 {
    * @param tokenId uint256 ID of the token to be added to the tokens list of the given address
    */
   function _addTokenTo(address to, uint256 tokenId) internal {
-    require(_tokenOwner[tokenId] == address(0));
+    require(_tokenOwner[tokenId] == address(0), 'cannot add token to - id already claimed');
     _tokenOwner[tokenId] = to;
     _ownedTokensCount[to] = _ownedTokensCount[to].add(1);
   }

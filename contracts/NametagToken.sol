@@ -55,19 +55,14 @@ contract NametagToken  is ERC721Enumerable, IERC721Metadata {
 
 
 
-    function reserveToken( address to, uint256 tokenId ) public  returns (bool)
-    {
-        reservedTokenId[tokenId] = to;
-        return true;
-    }
 
     function claimToken( address to,  string memory name  ) public  returns (bool)
     {
-      require(containsOnlyLower(name));
+      require(containsOnlyLower(name), 'contains only lower ');
 
       uint256 tokenId = (uint256) (keccak256(abi.encodePacked(name)));
 
-      require( reservedTokenId[tokenId] == address(0x0) || reservedTokenId[tokenId] == to  );
+    //  require( reservedTokenId[tokenId] == address(0x0) || reservedTokenId[tokenId] == to  , 'reserved token ');
 
       _mint(to, tokenId);
       _setTokenURI(tokenId, name);
@@ -198,7 +193,7 @@ contract NametagToken  is ERC721Enumerable, IERC721Metadata {
    * @param uri string URI to assign
    */
   function _setTokenURI(uint256 tokenId, string memory uri) internal {
-    require(_exists(tokenId));
+    require(_exists(tokenId), 'tokenId does not exist to set URI');
     _tokenURIs[tokenId] = uri;
   }
 

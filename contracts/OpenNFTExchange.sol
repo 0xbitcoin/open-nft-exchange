@@ -125,7 +125,7 @@ interface ERC165 {
    function supportsInterface(bytes4 interfaceID) external view returns (bool);
 }*/
 
- 
+
 
 
 contract ERC721Receiver {
@@ -207,14 +207,13 @@ contract OpenNFTExchange is ERC721Receiver {
   function depositNFT(address _nftContractAddress, uint _itemId) public returns (bool){
      address from = msg.sender;
 
-     iERC721(_nftContractAddress).safeTransferFrom(from, address(this),_itemId );
 
-    //remember to call Token(address).approve(this, amount) or this contract will not be able to do the transfer on your behalf.
+     iERC721(_nftContractAddress).transferFrom(from, address(this),_itemId );
 
-    //require(token>0);
-    //require(ERC20(token).transferFrom(msg.sender, this, amount));
-    //tokens[token][msg.sender] = safeAdd(tokens[token][msg.sender], amount);
-   // emit Deposit(token, msg.sender, amount, tokens[token][msg.sender]);
+    // iERC721(_nftContractAddress).safeTransferFrom(from, address(this),_itemId );
+
+
+
 
    //require( 1 == 2 , "one doesnt equal two!");
 
