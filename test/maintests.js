@@ -10,13 +10,15 @@ let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
 
 var web3utils = web3.utils;
 
+var nametagContract;
+
 contract('NametagToken', function(accounts) {
 
 
     it("can deploy ", async function () {
 
-      console.log( 'deploying token' )
-      var contract = await NametagToken.deployed();
+       
+      nametagContract = await NametagToken.deployed();
 
 
   }),
@@ -26,7 +28,7 @@ contract('NametagToken', function(accounts) {
 
   it("can be minted", async function () {
 
-    var contract = await NametagToken.deployed();
+    //var contract = await NametagToken.deployed();
 
     var phrase = 'toast';
 
@@ -37,16 +39,32 @@ contract('NametagToken', function(accounts) {
 
     console.log('token id is ',digest)
 
-    var contractFoundId = await contract.nameToTokenId(phrase);
+    var contractFoundId = await nametagContract.nameToTokenId(phrase);
     var contractFoundHex = web3utils.numberToHex(contractFoundId);
 
     assert.equal(digest,contractFoundHex)
 
- 
-});
+
+  });
 
 
 });
+
+
+contract('OpenNFTExchange', function(accounts) {
+
+  it("can deploy ", async function () {
+
+    console.log( 'deploying exchange' )
+    openNFTExchange = await OpenNFTExchange.deployed();
+
+    console.log('ntt is ', nametagContract)
+    })
+
+
+});
+
+
 
 /*
 This method is crucial for all apps and dapps that will implement NametagToken (NTT)
