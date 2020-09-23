@@ -67,16 +67,15 @@ contract('OpenNFTExchange', function(accounts) {
     var nftContractAddress = nametagContract.address;
 
     try {
-
       await openNFTExchange.depositNFT(nftContractAddress, assetId) ;
-
     } catch (error) {
-
-      // error.reason now populated with an REVERT reason
-
       assert.fail("Method Reverted", "depositNFT",  error.reason);
+    }
 
-      return;
+    try {
+      await openNFTExchange.withdrawNFT(nftContractAddress, assetId) ;
+    } catch (error) {
+      assert.fail("Method Reverted", "withdrawNFT",  error.reason);
     }
 
 

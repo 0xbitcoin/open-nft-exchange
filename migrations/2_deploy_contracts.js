@@ -5,7 +5,7 @@ module.exports = function(deployer) {
   deployer.deploy(NametagToken).then(function(){
 
       // NametagToken.address
-    return deployer.deploy(OpenNFTExchange)
+     return deployer.deploy(OpenNFTExchange)
 
   });
 };
