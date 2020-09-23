@@ -5,6 +5,10 @@
 
 //https://medium.com/@adrianmcli/migrating-your-truffle-project-to-web3-v1-0-ed3a56f11a4
 
+var EIP712Helper = require("./eip712-helper");
+var ECDSAHelper = require("./ecdsa-helper");
+
+
 // v1.0
 const { getWeb3, getContractInstance } = require("./web3helpers")
 const web3 = getWeb3()
@@ -103,10 +107,7 @@ contract('OpenNFTExchange',(accounts) => {
 
   });
 
-
-
-
-  it("can approve  ", async function () {
+    it("can approve  ", async function () {
 
     assert.isNotNull(nametagContract.options.address)
 
@@ -168,6 +169,42 @@ contract('OpenNFTExchange',(accounts) => {
 
 
     })
+
+
+
+
+      it("can accept offchain bid  ", async function () {
+
+
+        var nftContractAddress = nametagContract.options.address;
+
+
+        var tokenCurrencyAddress = fixedSupplyToken.options.address;
+
+        var exchangeAddress = openNFTExchange.options.address;
+
+        var bidAmount = 100;
+
+        let currentBlockNumber = await web3.eth.getBlockNumber()
+
+        var expires = currentBlockNumber + 10000;
+
+
+        await fixedSupplyToken.methods.approve(exchangeAddress, bidAmount  ).send({from: counterpartyAccount});
+
+
+        var newBid = ECDSAHelper.getOffchainBid(counterpartyAccount,nftContractAddress,assetId, tokenCurrencyAddress,bidAmount,  expires ) ;
+
+
+        var bidHash = await openNFTExchange.methods.getBidPacketHash(bid).call()
+
+
+        var typedDataHash =  await openNFTExchange.methods.getBidTypedDataHash(bid).call()
+
+
+
+
+      });
 
 
 });
