@@ -30,17 +30,19 @@ contract('NametagToken', function(accounts) {
 
     var phrase = 'toast';
 
-    var digest =  phraseToTokenIdHex(phrase)
+  //  var digest =  phraseToTokenIdHex(phrase)
 
 
-    var expectedId = await contract.bytes32ToTokenId(phrase);
-    var expectedHex = web3utils.numberToHex(expectedId);
-
-    assert.equal(digest,expectedHex)
+    var digest = '0x1c92591eed689492cee3417e45c874412ff7ae6243b8be23afccad4f23c1b7f2'
 
     console.log('token id is ',digest)
-    //toast becomes 0x8ab847ce1beebbb46fa247bfa0b755f51635dbeb9160f29f0dcb634914060cbc
 
+    var contractFoundId = await contract.nameToTokenId(phrase);
+    var contractFoundHex = web3utils.numberToHex(contractFoundId);
+
+    assert.equal(digest,contractFoundHex)
+
+ 
 });
 
 
