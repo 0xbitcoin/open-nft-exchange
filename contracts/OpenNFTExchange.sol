@@ -7,6 +7,9 @@ Work in Progress
 
 A decentralized exchange marketplace contract ERC721 tokens.
 
+//https://github.com/larvalabs/cryptopunks/blob/master/contracts/CryptoPunksMarket.sol
+
+
 Need to:
 1) allow deposit of ERC721 token with safeTransferFrom
 2) allow for on-chain 'bids' and 'asks' orders (making) against any ERC20 [token type and amt]
@@ -114,16 +117,7 @@ interface iERC721 /* is ERC165 */ {
    function isApprovedForAll(address _owner, address _operator) external view returns (bool);
 }
 
-/*
-interface ERC165 {
-   /// @notice Query if a contract implements an interface
-   /// @param interfaceID The interface identifier, as specified in ERC-165
-   /// @dev Interface identification is specified in ERC-165. This function
-   ///  uses less than 30,000 gas.
-   /// @return `true` if the contract implements `interfaceID` and
-   ///  `interfaceID` is not 0xffffffff, `false` otherwise
-   function supportsInterface(bytes4 interfaceID) external view returns (bool);
-}*/
+
 
 
 
@@ -137,8 +131,8 @@ contract OpenNFTExchange is ERC721Receiver {
 
     using SafeMath for uint;
 
-//https://github.com/larvalabs/cryptopunks/blob/master/contracts/CryptoPunksMarket.sol
 
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
 
 
 
@@ -169,13 +163,15 @@ contract OpenNFTExchange is ERC721Receiver {
     }
 
 
-    mapping (address => mapping (uint => address)) public itemsInEscrow;  //itemsInEscrow[nftAddress][indexOfToken] => ownerAddress
+    mapping (address => mapping (uint => address)) public nfTokensInEscrow;  //itemsInEscrow[nftAddress][indexOfToken] => ownerAddress
 
 
-    mapping (address => mapping (uint => Offer)) public itemsOfferedForSale;   //itemsOfferedForSale[nftAddress][indexOfToken] => Offer
+    mapping (address => mapping (uint => Offer)) public nfTokensOfferedForSale;   //itemsOfferedForSale[nftAddress][indexOfToken] => Offer
 
     // A record of the highest item bid
-    mapping (address=> mapping(uint => Bid)) public itemBids;   //itemBidsOfferedForSale[nftAddress][indexOfToken] => Bid
+    mapping (address=> mapping(uint => Bid)) public nfTokenBids;   //itemBidsOfferedForSale[nftAddress][indexOfToken] => Bid
+
+
 
   //mapping (address => mapping (address => uint)) public tokens; //mapping of token addresses to mapping of account balances (token=0 means Ether)
   //mapping (address => mapping (bytes32 => bool)) public orders; //mapping of user accounts to mapping of order hashes to booleans (true = submitted by user, equivalent to offchain signature)
@@ -197,9 +193,11 @@ contract OpenNFTExchange is ERC721Receiver {
   }
 
 
+  //return bytes4(keccak256("onERC721Received(address,address,uint256,bytes"));
+
   function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes memory _data) public returns (bytes4)
   {
-    return bytes4(keccak256("onERC721Received(address,address,uint256,bytes"));
+    return _ERC721_RECEIVED;
   }
 
   //deposit an NFT token into the exchange's escrow - requires an Approve first
@@ -207,11 +205,12 @@ contract OpenNFTExchange is ERC721Receiver {
   function depositNFT(address _nftContractAddress, uint _itemId) public returns (bool){
      address from = msg.sender;
 
+     require(ownerOf(_nftContractAddress,_itemId) == address(0), "NFT already deposited");
 
-     iERC721(_nftContractAddress).transferFrom(from, address(this),_itemId );
+     iERC721(_nftContractAddress).safeTransferFrom(from, address(this),_itemId );
 
-    // iERC721(_nftContractAddress).safeTransferFrom(from, address(this),_itemId );
-
+     //record the owner of the deposited item
+     nfTokensInEscrow[_nftContractAddress][_itemId] = from;
 
 
 
@@ -221,19 +220,26 @@ contract OpenNFTExchange is ERC721Receiver {
   }
 
   function withdrawNFT(address _nftContractAddress, uint _itemId) public returns (bool){
-       address from = msg.sender;
+      address from = msg.sender;
 
-      iERC721(_nftContractAddress).transferFrom(address(this),from,_itemId);
+      require(ownerOf(_nftContractAddress,_itemId) == from, "Not the owner");
 
-   // if (token==0) throw;
-    //if (tokens[token][msg.sender] < amount) throw;
-    //tokens[token][msg.sender] = safeSub(tokens[token][msg.sender], amount);
-    //if (!Token(token).transfer(msg.sender, amount)) throw;
-    //Withdraw(token, msg.sender, amount, tokens[token][msg.sender]);
+      iERC721(_nftContractAddress).safeTransferFrom(address(this),from,_itemId);
+
+      nfTokensInEscrow[_nftContractAddress][_itemId] = address(0);
+
+    return true;
   }
 
-  function getOwnerOfNFT(address _nftContractAddress, address _itemId) public view returns (uint) {
-     // return tokens[token][user];
+  function ownerOf(address _nftContractAddress, uint _itemId) public view returns (address) {
+     return nfTokensInEscrow[_nftContractAddress][_itemId];
+  }
+
+  function offerAssetForSale(address _nftContractAddress, uint _itemId, address _tokenCurrencyAddress, uint tokenCurrencyAmount  ) public returns (bool)
+  {
+
+
+    return true;
   }
 
 

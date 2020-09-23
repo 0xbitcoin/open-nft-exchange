@@ -1,11 +1,14 @@
 var NametagToken = artifacts.require("./NametagToken.sol");
 var OpenNFTExchange = artifacts.require("./OpenNFTExchange.sol");
+var FixedSupplyToken = artifacts.require("./FixedSupplyToken.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(NametagToken).then(function(){
+  deployer.deploy(FixedSupplyToken).then(function(){
 
-      // NametagToken.address
-     return deployer.deploy(OpenNFTExchange)
+    return deployer.deploy(NametagToken).then(function(){
 
+            // NametagToken.address
+            return deployer.deploy(OpenNFTExchange)
+       });
   });
 };

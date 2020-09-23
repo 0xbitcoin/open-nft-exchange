@@ -200,7 +200,7 @@ contract ERC721 is ERC165, IERC721 {
   {
     transferFrom(from, to, tokenId);
     // solium-disable-next-line arg-overflow
-    require(_checkAndCallSafeTransfer(from, to, tokenId, _data));
+    require(_checkAndCallSafeTransfer(from, to, tokenId, _data), 'check and call safe xfer broken ');
   }
 
   /**

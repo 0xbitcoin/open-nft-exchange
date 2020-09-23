@@ -22,6 +22,7 @@ var nametagContract;
 var assetId;
 var myAccount;
 
+var counterpartyAccount;
 
 
 //contract('NametagToken', function(accounts) {
@@ -30,11 +31,13 @@ var myAccount;
 
 contract('OpenNFTExchange',(accounts) => {
 
+  var fixedSupplyToken;
   var nametagContract;
   var openNFTExchange;
 
 
   it(" can deploy ", async () => {
+    fixedSupplyToken = getInstance("FixedSupplyToken");
     nametagContract = getInstance("NametagToken");
     openNFTExchange = getInstance("OpenNFTExchange");
 
@@ -42,7 +45,9 @@ contract('OpenNFTExchange',(accounts) => {
 
 
     myAccount = accounts[0];
+    counterpartyAccount = accounts[1];
       console.log('my acct ', myAccount )
+      console.log('counterparty acct ', counterpartyAccount )
 
 
 
@@ -118,19 +123,44 @@ contract('OpenNFTExchange',(accounts) => {
       assert.fail("Method Reverted", "approve",  error.reason);
     }
 
-
+    
+    //deposit the token
     try {
       await openNFTExchange.methods.depositNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
     } catch (error) {
       assert.fail("Method Reverted", "depositNFT",  error.reason);
     }
 
+    assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), myAccount)
+
+
+    var tokenCurrencyAddress = fixedSupplyToken.options.address;
+
+    //put up a 'sell' offer
+    try {
+      await openNFTExchange.methods.offerAssetForSale(nftContractAddress, assetId,tokenCurrencyAddress,100).send({ from: myAccount, gas:3000000 }) ;
+    } catch (error) {
+      assert.fail("Method Reverted", "depositNFT",  error.reason);
+    }
+
+    //another person accepts this offer
+
+
+    //you bid on the item that is in their possession in the exchange
+
+
+    //they accept your bid so the item goes to you
+
+
+
+    //you withdraw the token
     try {
       await openNFTExchange.methods.withdrawNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
     } catch (error) {
       assert.fail("Method Reverted", "withdrawNFT",  error.reason);
     }
 
+    assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), 0)
 
 
 
