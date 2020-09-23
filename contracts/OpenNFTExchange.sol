@@ -432,7 +432,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
   //make sure this has no extra spaces
    bytes32 public BIDPACKET_TYPEHASH = keccak256(
-       "BidPacket(address bidderAddress,address nfTokenContract,uint256 nfTokenId,address currencyTokenContract,uint256 currencyTokenAmount,uint256 expires)"
+       "OffchainBid(address bidderAddress,address nfTokenContract,uint256 nfTokenId,address currencyTokenContract,uint256 currencyTokenAmount,uint256 expires)"
    );
 
 
