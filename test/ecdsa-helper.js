@@ -81,15 +81,15 @@ function typedSignatureHash(typedData) {
     return hardcodedSchemaHash;
  }
 
- static getBidTypedDataHash(bid)
+ static getBidTypedDataHash(bid, contractAddress)
  {
-   var typedData = ECDSAHelper.getTypedDataFromBid(bid);
+   var typedData = ECDSAHelper.getTypedDataFromBid(bid, contractAddress);
 
 
    var typedDataHash = ethUtil.keccak256 (
        Buffer.concat([
            Buffer.from('1901', 'hex'),
-  //         EIP712Helper.structHash('EIP712Domain', typedData.domain, types),
+           EIP712Helper.structHash('EIP712Domain', typedData.domain, typedData.types),
            EIP712Helper.structHash(typedData.primaryType, typedData.bid, typedData.types),
        ]),
    );
@@ -97,11 +97,30 @@ function typedSignatureHash(typedData) {
    return typedDataHash;
  }
 
+
 //methodName,relayAuthority,from,to,walletAddress,tokenAddress,tokenAmount,relayerRewardToken,relayerRewardTokens,expires,nonce
- static getTypedDataFromBid( bid )
+ static getTypedDataFromBid( bid, contractAddress )
  {
+
+   const domaintypes = [
+      { name: "name", type: "string" },
+      { name: "version", type: "string" },
+      { name: "chainId", type: "uint256" },
+      { name: "verifyingContract", type: "address" }
+  ];
+
+
+  //change me !
+  const currentDomainData = {
+    name: "Only721",
+    version: "1",
+    chainId: 1,
+    verifyingContract: contractAddress
+  }
+
    const typedData = {
            types: {
+               EIP712Domain: domaintypes,
 
                OffchainBid: [
                    { name: 'bidderAddress', type: 'address' },
@@ -113,7 +132,8 @@ function typedSignatureHash(typedData) {
                ],
            },
            primaryType: 'OffchainBid',
-
+           domainTypes:  {},
+           domain: currentDomainData,
            bid: {
                bidderAddress: bid.bidderAddress,
                nfTokenContract: bid.nfTokenContract,

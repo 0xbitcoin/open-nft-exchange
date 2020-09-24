@@ -205,7 +205,7 @@ contract('OpenNFTExchange',(accounts) => {
 
 
         //not working
-        var localTypedDataHash = ECDSAHelper.bufferToHex(ECDSAHelper.getBidTypedDataHash(bid));
+        var localTypedDataHash = ECDSAHelper.bufferToHex(ECDSAHelper.getBidTypedDataHash(bid, exchangeAddress));
 
 
 

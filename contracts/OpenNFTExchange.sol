@@ -230,6 +230,16 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
     }
 
 
+   struct EIP712Domain {
+      string name;
+      string version;
+      uint256 chainId;
+      address verifyingContract;
+   }
+
+   EIP712Domain public domainData;
+
+
     mapping (address => mapping (uint => address)) public nfTokensInEscrow;  //itemsInEscrow[nftAddress][indexOfToken] => ownerAddress
 
 
@@ -252,6 +262,14 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
   event Trade(address nfTokenContract, uint nfTokenId, address currencyTokenContract, uint currencyTokenAmount, address newOwner);
 
   constructor() public {
+
+    domainData = EIP712Domain({
+        name: "Only721",
+        version: "1",
+        chainId: 1,
+        verifyingContract: address(this)
+    });
+
 
   }
 
@@ -422,7 +440,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
           // Note: we need to use `encodePacked` here instead of `encode`.
           bytes32 digest = keccak256(abi.encodePacked(
               "\x19\x01",
-            //  DOMAIN_SEPARATOR,
+              getDomainHash(),
               getBidPacketHash(bid)
           ));
           return digest;
@@ -431,9 +449,27 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
 
   //make sure this has no extra spaces
+   bytes32 public EIP712DOMAIN_TYPEHASH = keccak256(
+       "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+   );
+
+  //make sure this has no extra spaces
    bytes32 public BIDPACKET_TYPEHASH = keccak256(
        "OffchainBid(address bidderAddress,address nfTokenContract,uint256 nfTokenId,address currencyTokenContract,uint256 currencyTokenAmount,uint256 expires)"
    );
+
+
+
+     function getDomainHash()  public view returns (bytes32) {
+           return keccak256(abi.encode(
+               EIP712DOMAIN_TYPEHASH,
+               keccak256(bytes(domainData.name)),
+               keccak256(bytes(domainData.version)),
+               domainData.chainId,
+               domainData.verifyingContract
+           ));
+       }
+
 
 
     function getBidPacketHash(OffchainBid memory bid) public view returns (bytes32) {
