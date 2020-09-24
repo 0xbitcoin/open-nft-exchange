@@ -104,18 +104,18 @@ contract FixedSupplyToken is ERC20Interface {
         address _to,
         uint256 _amount
     ) public returns (bool success) {
-        if (balances[_from] >= _amount
-            && allowed[_from][msg.sender] >= _amount
-            && _amount > 0
-            && balances[_to] + _amount > balances[_to]) {
+      require( balances[_from] >= _amount , 'insufficent balance');
+      require( allowed[_from][msg.sender] >= _amount , 'insufficent allowance');
+      require( _amount > 0, 'amount is zero' );
+      require( balances[_to] + _amount > balances[_to], 'overflow?' );
+
+
             balances[_from] -= _amount;
             allowed[_from][msg.sender] -= _amount;
             balances[_to] += _amount;
             emit Transfer(_from, _to, _amount);
             return true;
-        } else {
-            return false;
-        }
+
     }
 
     // Allow _spender to withdraw from your account, multiple times, up to the _value amount.

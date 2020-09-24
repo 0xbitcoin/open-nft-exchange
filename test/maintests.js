@@ -147,29 +147,32 @@ contract('OpenNFTExchange',(accounts) => {
       assert.fail("Method Reverted", "depositNFT",  error.reason);
     }
 
+
+    await fixedSupplyToken.methods.approve(exchangeAddress, 100  ).send({from: counterpartyAccount});
+
+  if(true){ //why does this make the last method revert..
     //another person accepts this offer
 
-
-    //you bid on the item that is in their possession in the exchange
-
-
-    //they accept your bid so the item goes to you
+      await openNFTExchange.methods.buyoutAsset(nftContractAddress, assetId,tokenCurrencyAddress,100).send({ from: counterpartyAccount, gas:3000000 }) ;
 
 
 
     //you withdraw the token
     try {
-      await openNFTExchange.methods.withdrawNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
+      await openNFTExchange.methods.withdrawNFT(nftContractAddress, assetId).send({ from: counterpartyAccount, gas:3000000 }) ;
     } catch (error) {
       assert.fail("Method Reverted", "withdrawNFT",  error.reason);
     }
+
+    await nametagContract.methods.safeTransferFrom(counterpartyAccount,myAccount, assetId).send({ from: counterpartyAccount, gas:3000000 })
+
 
     assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), 0)
 
     await nametagContract.methods.approve(exchangeAddress, assetId).send({ from: myAccount, gas:3000000 })
 
     await openNFTExchange.methods.depositNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
-
+}
 
     assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), myAccount)
 
@@ -252,7 +255,7 @@ contract('OpenNFTExchange',(accounts) => {
         //this isnt working
         assert.equal('0x'.concat(recoveredAddress).toLowerCase(),counterpartyAccount.toLowerCase())
          console.log('recoveredAddress',recoveredAddress);
- 
+
          await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
 
 

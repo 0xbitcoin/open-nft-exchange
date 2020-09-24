@@ -322,6 +322,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
     require(ownerOf(_nfTokenContract,_nfTokenId) == from, "Not the owner");
 
+
     nfTokensOfferedForSale[_nfTokenContract][_nfTokenId] = Offer({
        isForSale: true,
 
@@ -358,15 +359,23 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
 
   //requires pre-approval of the currencyToken specified in the offer
-  function buyoutAsset(address _nfTokenContract, uint _nfTokenId) public returns (bool)
+  function buyoutAsset(address _nfTokenContract, uint _nfTokenId,address currencyTokenContract,uint currencyTokenAmount) public returns (bool)
   {
     address buyer = msg.sender;
 
     require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].isForSale, "Not for sale");
 
+    address onlySellTo = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].onlySellTo;
+    require(onlySellTo == address(0) || onlySellTo == buyer, 'Not onlySellTo');
+
+
+    require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract == currencyTokenContract, "Incorrect currencyToken");
+    require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount == currencyTokenAmount, "Incorrect currencyAmount");
+
     require(_handlePaymentForSaleOfNfToken(_nfTokenContract,_nfTokenId,buyer), 'Payment failed');
 
-    require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
+    //thsi is the issue
+//    require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
 
     //reassign the owner of the asset
     nfTokensInEscrow[_nfTokenContract][_nfTokenId] = buyer;
@@ -380,7 +389,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
   function _cancelSaleOfferOnAsset(address _nfTokenContract, uint _nfTokenId) private returns (bool)
   {
-   delete nfTokensOfferedForSale[_nfTokenContract][_nfTokenId]  ;
+    delete nfTokensOfferedForSale[_nfTokenContract][_nfTokenId]  ;
 
     return true;
   }
@@ -401,7 +410,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
   bytes sig;
 
- 
+
 
   //bids will be offchain and fed into the contract by the owner
   function acceptOffchainBidWithSignature(OffchainBid memory bid, bytes memory buyerSignature  ) public returns (bool)
