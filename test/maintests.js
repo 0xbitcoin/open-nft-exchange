@@ -166,6 +166,13 @@ contract('OpenNFTExchange',(accounts) => {
 
     assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), 0)
 
+    await nametagContract.methods.approve(exchangeAddress, assetId).send({ from: myAccount, gas:3000000 })
+
+    await openNFTExchange.methods.depositNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
+
+
+    assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), myAccount)
+
 
 
 
@@ -191,6 +198,11 @@ contract('OpenNFTExchange',(accounts) => {
         var expires = currentBlockNumber + 10000;
 
 
+
+
+        assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), myAccount)
+
+
         await fixedSupplyToken.methods.approve(exchangeAddress, bidAmount  ).send({from: counterpartyAccount});
 
 
@@ -214,21 +226,25 @@ contract('OpenNFTExchange',(accounts) => {
         assert.equal( localTypedDataHash,typedDataHash );
 
 
-          var privateKey="2879224732c8e8cda9bdf6d1037919eb221a93d914dd6d096613a99555637c2f";
+          var counterpartyPrivateKey="99f7cd424c1f234e3a7ae7e0778d65a254e8e25c2a7fea3c7df9ba358c46e3d1";
           var messageToSign = typedDataHash;
 
           var msgHash = EthUtil.hashPersonalMessage(new Buffer(messageToSign));
-          var signatureBuffer = EthUtil.ecsign(msgHash, new Buffer(privateKey, 'hex'));
+          var signatureBuffer = EthUtil.ecsign(msgHash, new Buffer(counterpartyPrivateKey, 'hex'));
          var signatureRPC = EthUtil.toRpcSig(signatureBuffer.v, signatureBuffer.r, signatureBuffer.s)
 
         console.log('sig',signatureRPC);
+        console.log('bid tuple',bidTuple);
+
+        var recoverAddress = EthUtil.ecrecover(msgHash,signatureBuffer.v,signatureBuffer.r,signatureBuffer.s)
 
 
-         try {
-             await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount})
-         } catch (error) {
-           assert.fail("Method Reverted", "acceptOffchainBidWithSignature",  error.reason);
-         }
+        //this isnt working 
+        assert.equal(ECDSAHelper.bufferToHex(recoverAddress),counterpartyAccount)
+        console.log('recoverAddress',recoverAddress);
+
+         await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
+
 
         //add domain typehash
         // https://ethvigil.com/docs/eip712_sign_example_code/
