@@ -22,7 +22,7 @@ module.exports = class ECDSAHelper{
 
 
 
-  static signTypedData(privateKey, msgParams)
+  static signTypedData(msgParams,privateKey)
   {
 
     const msgHash = ethSigUtil.typedSignatureHash(msgParams.data)

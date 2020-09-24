@@ -233,7 +233,7 @@ contract('OpenNFTExchange',(accounts) => {
           var counterpartyPrivateKey="99f7cd424c1f234e3a7ae7e0778d65a254e8e25c2a7fea3c7df9ba358c46e3d1";
           var messageToSign = typedDataHash;
 
-          var msgHash = (new Buffer(messageToSign));
+          var msgHash = (EthUtil.toBuffer(messageToSign));
           var signatureBuffer = EthUtil.ecsign(msgHash, new Buffer(counterpartyPrivateKey, 'hex'));
          var signatureRPC = EthUtil.toRpcSig(signatureBuffer.v, signatureBuffer.r, signatureBuffer.s).toString('hex')
          //------ end simulate metamask
@@ -256,7 +256,7 @@ contract('OpenNFTExchange',(accounts) => {
       var addy =    await openNFTExchange.methods.getSigner(bidTuple,signatureRPC).call()
       console.log('addy',addy)
 
-      //   await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
+         await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
 
 
         //add domain typehash
