@@ -106,7 +106,8 @@ function typedSignatureHash(typedData) {
       { name: "name", type: "string" },
       { name: "version", type: "string" },
       { name: "chainId", type: "uint256" },
-      { name: "verifyingContract", type: "address" }
+      { name: "verifyingContract", type: "address" },
+      { name: "salt", type: "bytes32" }
   ];
 
 
@@ -115,7 +116,8 @@ function typedSignatureHash(typedData) {
     name: "Only721",
     version: "1",
     chainId: 1,
-    verifyingContract: contractAddress
+    verifyingContract: contractAddress,
+    salt: "0xb493912f33b564e014c6a3db21cef37bf544e13a7fcebd19e348216d05a0d0bc"
   }
 
    const typedData = {

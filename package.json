@@ -10,7 +10,7 @@
     "test": "test"
   },
   "scripts": {
-    "flatten": "truffle-flattener ./contracts/NametagToken.sol > ./deployable/NametagTokenFlattened.sol",
+    "flatten": "truffle-flattener ./contracts/OpenNFTExchange.sol > ./deployable/OpenNFTExchangeFlattened.sol",
     "test": "truffle test",
     "build": "truffle compile"
   },

@@ -150,7 +150,7 @@ contract('OpenNFTExchange',(accounts) => {
 
     await fixedSupplyToken.methods.approve(exchangeAddress, 100  ).send({from: counterpartyAccount});
 
-  if(true){ //why does this make the last method revert..
+
     //another person accepts this offer
 
       await openNFTExchange.methods.buyoutAsset(nftContractAddress, assetId,tokenCurrencyAddress,100).send({ from: counterpartyAccount, gas:3000000 }) ;
@@ -172,7 +172,7 @@ contract('OpenNFTExchange',(accounts) => {
     await nametagContract.methods.approve(exchangeAddress, assetId).send({ from: myAccount, gas:3000000 })
 
     await openNFTExchange.methods.depositNFT(nftContractAddress, assetId).send({ from: myAccount, gas:3000000 }) ;
-}
+
 
     assert.equal( await openNFTExchange.methods.ownerOf(nftContractAddress,assetId).call(), myAccount)
 
