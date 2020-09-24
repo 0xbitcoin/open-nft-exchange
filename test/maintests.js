@@ -8,6 +8,7 @@
 var EIP712Helper = require("./eip712-helper");
 var ECDSAHelper = require("./ecdsa-helper");
 
+var EthUtil = require('ethereumjs-util')
 
 // v1.0
 const { getWeb3, getContractInstance } = require("./web3helpers")
@@ -212,6 +213,22 @@ contract('OpenNFTExchange',(accounts) => {
 
         assert.equal( localTypedDataHash,typedDataHash );
 
+
+          var privateKey="2879224732c8e8cda9bdf6d1037919eb221a93d914dd6d096613a99555637c2f";
+          var messageToSign = typedDataHash;
+
+          var msgHash = EthUtil.hashPersonalMessage(new Buffer(messageToSign));
+          var signatureBuffer = EthUtil.ecsign(msgHash, new Buffer(privateKey, 'hex'));
+         var signatureRPC = EthUtil.toRpcSig(signatureBuffer.v, signatureBuffer.r, signatureBuffer.s)
+
+        console.log('sig',signatureRPC);
+
+
+         try {
+             await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount})
+         } catch (error) {
+           assert.fail("Method Reverted", "acceptOffchainBidWithSignature",  error.reason);
+         }
 
         //add domain typehash
         // https://ethvigil.com/docs/eip712_sign_example_code/

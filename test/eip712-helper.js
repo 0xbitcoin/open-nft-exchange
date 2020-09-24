@@ -40,7 +40,7 @@ module.exports = class EIP712Helper{
     }
 
     static typeHash(primaryType, types) {
-        return ethUtil.keccak256 (EIP712Helper.encodeType(primaryType, types));
+        return ethUtil.keccak256( Buffer.from(EIP712Helper.encodeType(primaryType, types)));
     }
 
     static encodeData(primaryType, data, types) {
@@ -56,11 +56,11 @@ module.exports = class EIP712Helper{
             let value = data[field.name];
             if (field.type == 'string' || field.type == 'bytes') {
                 encTypes.push('bytes32');
-                value = ethUtil.keccak256 (value);
+                value = ethUtil.keccak256(Buffer.from((value)));
                 encValues.push(value);
             } else if (types[field.type] !== undefined) {
                 encTypes.push('bytes32');
-                value = ethUtil.keccak256 (EIP712Helper.encodeData(field.type, value, types));
+                value = ethUtil.keccak256(Buffer.from(EIP712Helper.encodeData(field.type, value, types)));
                 encValues.push(value);
             } else if (field.type.lastIndexOf(']') === field.type.length - 1) {
                 throw 'TODO: Arrays currently unimplemented in encodeData';
