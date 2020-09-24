@@ -230,7 +230,7 @@ contract('OpenNFTExchange',(accounts) => {
 
 
         //Simulate metamask ------
-          var counterpartyPrivateKey="99f7cd424c1f234e3a7ae7e0778d65a254e8e25c2a7fea3c7df9ba358c46e3d1";
+          var counterpartyPrivateKey="b4cd16db93c02d8c3ce1c6cc1e64f617eb110ae26cfd91b3c968954c2740e5e7";
           var messageToSign = typedDataHash;
 
           var msgHash = (EthUtil.toBuffer(messageToSign));
@@ -252,10 +252,7 @@ contract('OpenNFTExchange',(accounts) => {
         //this isnt working
         assert.equal('0x'.concat(recoveredAddress).toLowerCase(),counterpartyAccount.toLowerCase())
          console.log('recoveredAddress',recoveredAddress);
-
-      var addy =    await openNFTExchange.methods.getSigner(bidTuple,signatureRPC).call()
-      console.log('addy',addy)
-
+ 
          await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
 
 
