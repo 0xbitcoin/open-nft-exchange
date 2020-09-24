@@ -226,24 +226,37 @@ contract('OpenNFTExchange',(accounts) => {
         assert.equal( localTypedDataHash,typedDataHash );
 
 
+        //ecsign not producing the right signature ?
+
+
+        //Simulate metamask ------
           var counterpartyPrivateKey="99f7cd424c1f234e3a7ae7e0778d65a254e8e25c2a7fea3c7df9ba358c46e3d1";
           var messageToSign = typedDataHash;
 
-          var msgHash = EthUtil.hashPersonalMessage(new Buffer(messageToSign));
+          var msgHash = (new Buffer(messageToSign));
           var signatureBuffer = EthUtil.ecsign(msgHash, new Buffer(counterpartyPrivateKey, 'hex'));
-         var signatureRPC = EthUtil.toRpcSig(signatureBuffer.v, signatureBuffer.r, signatureBuffer.s)
+         var signatureRPC = EthUtil.toRpcSig(signatureBuffer.v, signatureBuffer.r, signatureBuffer.s).toString('hex')
+         //------ end simulate metamask
 
-        console.log('sig',signatureRPC);
-        console.log('bid tuple',bidTuple);
-
-        var recoverAddress = EthUtil.ecrecover(msgHash,signatureBuffer.v,signatureBuffer.r,signatureBuffer.s)
+         console.log('sig',signatureRPC);
+         console.log('bid tuple',bidTuple);
 
 
-        //this isnt working 
-        assert.equal(ECDSAHelper.bufferToHex(recoverAddress),counterpartyAccount)
-        console.log('recoverAddress',recoverAddress);
+         var sigDecoded = EthUtil.fromRpcSig(signatureRPC)
 
-         await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
+        var recoveredPubKey = EthUtil.ecrecover(msgHash,sigDecoded.v,sigDecoded.r,sigDecoded.s)
+
+
+        var recoveredAddress = EthUtil.pubToAddress(recoveredPubKey).toString("hex")
+
+        //this isnt working
+        assert.equal('0x'.concat(recoveredAddress).toLowerCase(),counterpartyAccount.toLowerCase())
+         console.log('recoveredAddress',recoveredAddress);
+
+      var addy =    await openNFTExchange.methods.getSigner(bidTuple,signatureRPC).call()
+      console.log('addy',addy)
+
+      //   await openNFTExchange.methods.acceptOffchainBidWithSignature(bidTuple,signatureRPC).send({from: myAccount, gas:3000000})
 
 
         //add domain typehash

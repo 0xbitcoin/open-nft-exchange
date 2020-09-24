@@ -402,6 +402,15 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
   bytes sig;
 
 
+
+//not working -- test function 
+  function getSigner(OffchainBid memory bid, bytes memory buyerSignature) public  returns (address){
+      bytes32 sigHash = getBidTypedDataHash(bid);
+        sig = buyerSignature;
+      address recoveredSignatureSigner = recover(sigHash, sig );
+      return recoveredSignatureSigner;
+  }
+
   //bids will be offchain and fed into the contract by the owner
   function acceptOffchainBidWithSignature(OffchainBid memory bid, bytes memory buyerSignature  ) public returns (bool)
   {
