@@ -363,24 +363,38 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
   {
     address buyer = msg.sender;
 
-    require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].isForSale, "Not for sale");
+    Offer memory saleOffer = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId];
 
-    address onlySellTo = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].onlySellTo;
+    require(saleOffer.isForSale, "Not for sale");
+
+    address onlySellTo = saleOffer.onlySellTo;
     require(onlySellTo == address(0) || onlySellTo == buyer, 'Not onlySellTo');
 
 
-    require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract == currencyTokenContract, "Incorrect currencyToken");
-    require(nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount == currencyTokenAmount, "Incorrect currencyAmount");
+    require(saleOffer.currencyTokenContract == currencyTokenContract, "Incorrect currencyToken");
+    require(saleOffer.currencyTokenAmount == currencyTokenAmount, "Incorrect currencyAmount");
 
-    require(_handlePaymentForSaleOfNfToken(_nfTokenContract,_nfTokenId,buyer), 'Payment failed');
+    address seller = saleOffer.sellerAddress;
+
+    address currencyToken = saleOffer.currencyTokenContract;
+    uint currencyTokenAmount = saleOffer.currencyTokenAmount;
+
+
+    require(_handlePaymentForSaleOfNfToken(
+      _nfTokenContract,
+      _nfTokenId,
+      buyer,
+      saleOffer.sellerAddress,
+      saleOffer.currencyTokenContract,
+      saleOffer.currencyTokenAmount), 'Payment failed');
 
     //thsi is the issue
-//    require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
+    require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
 
     //reassign the owner of the asset
     nfTokensInEscrow[_nfTokenContract][_nfTokenId] = buyer;
 
-    emit Trade(_nfTokenContract, _nfTokenId, nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract , nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount, buyer);
+    emit Trade(_nfTokenContract, _nfTokenId, saleOffer.currencyTokenContract , saleOffer.currencyTokenAmount, buyer);
 
     return true;
   }
@@ -389,20 +403,32 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
   function _cancelSaleOfferOnAsset(address _nfTokenContract, uint _nfTokenId) private returns (bool)
   {
-    delete nfTokensOfferedForSale[_nfTokenContract][_nfTokenId]  ;
+
+    address seller = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].sellerAddress;
+
+    nfTokensOfferedForSale[_nfTokenContract][_nfTokenId] = Offer({
+      isForSale: false,
+
+      nfTokenContract: _nfTokenContract,
+      nfTokenId: _nfTokenId,
+
+      sellerAddress: seller,
+
+      currencyTokenContract: address(0),
+      currencyTokenAmount: 0,
+
+      onlySellTo: address(0) //sell to anyone
+
+      })  ;
 
     return true;
   }
 
-  function _handlePaymentForSaleOfNfToken(address _nfTokenContract,uint _nfTokenId,address buyer) private returns (bool)
+  function _handlePaymentForSaleOfNfToken(address _nfTokenContract,uint _nfTokenId,address buyer, address seller, address currencyTokenContract, uint currencyTokenAmount) private returns (bool)
   {
-    address seller = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].sellerAddress;
-
-    address currencyToken = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract;
-    uint currencyTokenAmount = nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount;
 
     //pull the currency tokens into this contract and then send them to the seller
-    require( ERC20(currencyToken).transferFrom(buyer,seller,currencyTokenAmount), 'Could not transferFrom the currencyToken' );
+    require( ERC20(currencyTokenContract).transferFrom(buyer,seller,currencyTokenAmount), 'Could not transferFrom the currencyToken' );
 
     return true;
   }
@@ -429,16 +455,14 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
     address recoveredSignatureSigner = recover(sigHash, sig );
     require(bid.bidderAddress == recoveredSignatureSigner, 'Offchain signature invalid');
 
-
-
-    require(_handlePaymentForSaleOfNfToken(_nfTokenContract,_nfTokenId,bid.bidderAddress), 'Payment failed');
+    require(_handlePaymentForSaleOfNfToken(_nfTokenContract,_nfTokenId,bid.bidderAddress, from, bid.currencyTokenContract, bid.currencyTokenAmount), 'Payment failed');
 
     require(_cancelSaleOfferOnAsset(_nfTokenContract, _nfTokenId));
 
     //reassign the owner of the asset
     nfTokensInEscrow[_nfTokenContract][_nfTokenId] = bid.bidderAddress;
 
-    emit Trade(_nfTokenContract, _nfTokenId, nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenContract , nfTokensOfferedForSale[_nfTokenContract][_nfTokenId].currencyTokenAmount, bid.bidderAddress);
+  //  emit Trade(_nfTokenContract, _nfTokenId, bid.currencyTokenContract , bid.currencyTokenAmount, bid.bidderAddress);
 
     return true;
   }
