@@ -331,6 +331,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
       string version;
       uint256 chainId;
       address verifyingContract;
+      bytes32 salt;
    }
 
    EIP712Domain public domainData;
