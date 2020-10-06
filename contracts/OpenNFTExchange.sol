@@ -4,22 +4,83 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 
 /**
-
 Work in Progress
-
 A decentralized exchange marketplace contract ERC721 tokens.
-
 //https://github.com/larvalabs/cryptopunks/blob/master/contracts/CryptoPunksMarket.sol
-
-
 Need to:
 1) allow deposit of ERC721 token with safeTransferFrom
 2) allow for on-chain 'bids' and 'asks' orders (making) against any ERC20 [token type and amt]
 3) allow for on-chain taking of said orders
 */
 
-import "./util/SafeMath.sol";
-import "./util/ERC20.sol";
+
+/**
+ * @title SafeMath
+ * @dev Math operations with safety checks that throw on error
+ */
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, throws on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers, truncating the quotient.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  /**
+  * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  /**
+  * @dev Adds two numbers, throws on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
+
+
+/*
+PAYSPEC: Generic global invoicing contract
+
+
+*/
+
+contract ERC20Interface {
+    function totalSupply() public view returns (uint);
+    function balanceOf(address tokenOwner) public view returns (uint balance);
+    function allowance(address tokenOwner, address spender) public view returns (uint remaining);
+    function transfer(address to, uint tokens) public returns (bool success);
+    function approve(address spender, uint tokens) public returns (bool success);
+    function transferFrom(address from, address to, uint tokens) public returns (bool success);
+
+    event Transfer(address indexed from, address indexed to, uint tokens);
+    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
+}
+
+
 
 
 
@@ -375,7 +436,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
     address seller = saleOffer.sellerAddress;
 
     address currencyToken = saleOffer.currencyTokenContract;
-    uint currencyTokenAmount = saleOffer.currencyTokenAmount;
+    //uint currencyTokenAmount = saleOffer.currencyTokenAmount;
 
 
     require(_handlePaymentForSaleOfNfToken(
@@ -426,7 +487,7 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
   {
 
     //pull the currency tokens into this contract and then send them to the seller
-    require( ERC20(currencyTokenContract).transferFrom(buyer,seller,currencyTokenAmount), 'Could not transferFrom the currencyToken' );
+    require( ERC20Interface(currencyTokenContract).transferFrom(buyer,seller,currencyTokenAmount), 'Could not transferFrom the currencyToken' );
 
     return true;
   }
