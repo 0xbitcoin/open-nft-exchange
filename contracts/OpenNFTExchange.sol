@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
 
-pragma experimental ABIEncoderV2;
+ 
 
 /**
 Work in Progress
@@ -497,16 +497,35 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
 
 
+ 
+
+
+
   //bids will be offchain and fed into the contract by the owner
-  function acceptOffchainBidWithSignature(OffchainBid memory bid, bytes memory buyerSignature  ) public returns (bool)
-  {
+  function acceptOffchainBidWithSignature(address _bidderAddress, address _nfTokenContract, uint _nfTokenId, address _currencyTokenContract, uint _currencyTokenAmount,  uint _expires, bytes memory buyerSignature  ) public returns (bool)
+  { 
+      OffchainBid memory bid = OffchainBid({
+         bidderAddress: _bidderAddress,
+
+         nfTokenContract: _nfTokenContract,
+         nfTokenId: _nfTokenId,
+
+         currencyTokenContract: _currencyTokenContract,
+         currencyTokenAmount: _currencyTokenAmount,
+
+         expires: _expires
+          
+          
+      });
+      
+      
     address _nfTokenContract = bid.nfTokenContract;
     uint _nfTokenId = bid.nfTokenId;
 
     address from = msg.sender;
     require(ownerOf(_nfTokenContract,_nfTokenId) == from, "Not the owner");
 
-    bytes32 sigHash = getBidTypedDataHash(bid);
+    bytes32 sigHash = getBidTypedDataHash( _bidderAddress, _nfTokenContract, _nfTokenId,  _currencyTokenContract, _currencyTokenAmount, _expires );
 
     sig = buyerSignature;
 
@@ -527,14 +546,14 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
   }
 
 
-  function getBidTypedDataHash(OffchainBid memory bid) public view returns (bytes32)
+  function getBidTypedDataHash(address _bidderAddress, address _nfTokenContract, uint _nfTokenId, address _currencyTokenContract, uint _currencyTokenAmount,  uint _expires) public view returns (bytes32)
   {
 
           // Note: we need to use `encodePacked` here instead of `encode`.
           bytes32 digest = keccak256(abi.encodePacked(
               "\x19\x01",
               getDomainHash(),
-              getBidPacketHash(bid)
+              getBidPacketHash(_bidderAddress,_nfTokenContract,_nfTokenId,_currencyTokenContract,_currencyTokenAmount,_expires)
           ));
           return digest;
 
@@ -566,15 +585,15 @@ contract OpenNFTExchange is ERC721Receiver,ECRecovery {
 
 
 
-    function getBidPacketHash(OffchainBid memory bid) public view returns (bytes32) {
+    function getBidPacketHash(address _bidderAddress, address _nfTokenContract, uint _nfTokenId, address _currencyTokenContract, uint _currencyTokenAmount,  uint _expires) public view returns (bytes32) {
         return keccak256(abi.encode(
             BIDPACKET_TYPEHASH,
-            bid.bidderAddress,
-            bid.nfTokenContract,
-            bid.nfTokenId,
-            bid.currencyTokenContract,
-            bid.currencyTokenAmount,
-            bid.expires
+            _bidderAddress,
+            _nfTokenContract,
+            _nfTokenId,
+            _currencyTokenContract,
+            _currencyTokenAmount,
+            _expires
         ));
     }
 
